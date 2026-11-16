@@ -1,46 +1,213 @@
+
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nuclei Scanner - Local Lab</title>
+
 <style>
-body { font: 16px/1.55 system-ui,sans-serif; max-width: 900px; padding: 1rem; margin: auto }
-input { padding: .6rem; width: min(100%, 32rem); box-sizing: border-box }
-button { padding: .6rem 1rem }
-table { width: 100%; border-collapse: collapse }
-th,td { padding: .5rem; border: 1px solid #aaa; text-align: left; overflow-wrap: anywhere }
-.error { color: #ae1212; font-weight: bold }
-pre { white-space: pre-wrap; overflow-wrap: anywhere }
+body {
+    font: 16px/1.55 system-ui, sans-serif;
+    max-width: 900px;
+    padding: 1rem;
+    margin: auto;
+}
+
+input {
+    padding: .6rem;
+    width: min(100%, 32rem);
+    box-sizing: border-box;
+}
+
+button {
+    padding: .6rem 1rem;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th, td {
+    padding: .5rem;
+    border: 1px solid #aaa;
+    text-align: left;
+    overflow-wrap: anywhere;
+}
+
+.error {
+    color: #ae1212;
+    font-weight: bold;
+}
+
+pre {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+/* New severity summary dashboard */
+
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px;
+    margin-bottom: 25px;
+}
+
+.summary-card {
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    background: #f8fafc;
+}
+
+.summary-card strong {
+    display: block;
+    font-size: 30px;
+}
+
+.total { color: #334155; }
+.critical { color: #991b1b; }
+.high { color: #dc2626; }
+.medium { color: #d97706; }
+.low { color: #15803d; }
+.info { color: #2563eb; }
+.unknown { color: #64748b; }
+
+.summary-note {
+    color: #555;
+    font-size: 14px;
+}
 </style>
 </head>
+
 <body>
+
 <h1>Nuclei Scanner - Local Lab</h1>
-<p>Scan only systems you own or are permitted to test. Default: http://127.0.0.1:8000.</p>
-<form action="/scan" method="post" onsubmit="document.getElementById('status').textContent='Scanning…';">
+
+<p>Scan only systems you own or are permitted to test.
+Default: http://127.0.0.1:8000.</p>
+
+<form action="/scan" method="post"
+onsubmit="document.getElementById('status').textContent='Scanning...';">
+
 <label for="target">Authorized URL</label>
-<input id="target" name="target" type="url" maxlength="2048" required value="{{ target or 'http://127.0.0.1:8000' }}">
+
+<input id="target" name="target" type="url"
+maxlength="2048" required
+value="{{ target or 'http://127.0.0.1:8000' }}">
+
 <button type="submit">Scan</button>
+
 </form>
+
 <p id="status" aria-live="polite"></p>
+
 {% if error %}
+
 <p class="error" role="alert">Scan error: {{ error }}</p>
+
 {% elif completed %}
+
 <h2>Results for {{ target }}</h2>
+
+<!-- New severity summary dashboard -->
+
+<h3>Security Scan Summary</h3>
+
+<div class="summary-grid">
+
+    <div class="summary-card total">
+        <strong>{{ summary.total }}</strong>
+        Total Findings
+    </div>
+
+    <div class="summary-card critical">
+        <strong>{{ summary.critical }}</strong>
+        Critical
+    </div>
+
+    <div class="summary-card high">
+        <strong>{{ summary.high }}</strong>
+        High
+    </div>
+
+    <div class="summary-card medium">
+        <strong>{{ summary.medium }}</strong>
+        Medium
+    </div>
+
+    <div class="summary-card low">
+        <strong>{{ summary.low }}</strong>
+        Low
+    </div>
+
+    <div class="summary-card info">
+        <strong>{{ summary.info }}</strong>
+        Informational
+    </div>
+
+    {% if summary.unknown %}
+    <div class="summary-card unknown">
+        <strong>{{ summary.unknown }}</strong>
+        Unknown
+    </div>
+    {% endif %}
+
+</div>
+
+<p class="summary-note">
+This summary counts findings from the limited security header scan.
+Missing headers do not necessarily indicate vulnerabilities.
+</p>
+
+<h3>Detailed Findings</h3>
+
 {% if findings %}
+
 <table>
-<thead><tr><th>Severity</th><th>Template</th><th>Missing header</th><th>URL</th><th>Description</th></tr></thead>
+<thead>
+<tr>
+    <th>Severity</th>
+    <th>Template</th>
+    <th>Missing header</th>
+    <th>URL</th>
+    <th>Description</th>
+</tr>
+</thead>
+
 <tbody>
+
 {% for f in findings %}
-<tr><td>{{ f.get('info', {}).get('severity', '') }}</td>
-<td>{{ f.get('info', {}).get('name', '') }}</td>
-<td>{{ f.get('matcher-name', '') }}</td>
-<td>{{ f.get('matched-at', '') }}</td>
-<td>{{ f.get('info', {}).get('description', '') }}</td></tr>
+
+<tr>
+    <td>{{ f.get('info', {}).get('severity', '') }}</td>
+    <td>{{ f.get('info', {}).get('name', '') }}</td>
+    <td>{{ f.get('matcher-name', '') }}</td>
+    <td>{{ f.get('matched-at', '') }}</td>
+    <td>{{ f.get('info', {}).get('description', '') }}</td>
+</tr>
+
 {% endfor %}
-</tbody></table>
+
+</tbody>
+</table>
+
 {% else %}
-<p>No matches from the limited header template. This does not establish that the target is secure.</p>
+
+<p>No matches from the limited header template.
+This does not establish that the target is secure.</p>
+
 {% endif %}
-{% if stderr %}<h3>Scanner messages</h3><pre>{{ stderr }}</pre>{% endif %}
+
+{% if stderr %}
+<h3>Scanner messages</h3>
+<pre>{{ stderr }}</pre>
 {% endif %}
-</body></html>
+
+{% endif %}
+
+</body>
+</html>

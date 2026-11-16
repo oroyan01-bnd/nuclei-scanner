@@ -101,8 +101,27 @@ def scan():
         findings, stderr = scan_target(target)
     except RuntimeError as exc:
         return render_template("index.html", target=target, error=str(exc)), 502
+    # Count findings by severity
+    summary = {
+        "total": len(findings),
+        "critical": 0,
+        "high": 0,
+        "medium": 0,
+        "low": 0,
+        "info": 0,
+        "unknown": 0
+    }
+
+    for finding in findings:
+        severity = finding.get("info", {}).get("severity", "unknown")
+
+        if severity in ("critical", "high", "medium", "low", "info"):
+            summary[severity] += 1
+        else:
+            summary["unknown"] += 1
+
     return render_template("index.html", target=target, findings=findings,
-                           stderr=stderr, completed=True)
+                           stderr=stderr, completed=True, summary=summary)
 
 
 if __name__ == "__main__":
